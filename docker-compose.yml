@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: martens-movies-postgres
+    environment:
+      POSTGRES_USER: movies
+      POSTGRES_PASSWORD: movies
+      POSTGRES_DB: movies
+    ports:
+      - "5433:5432"
+    volumes:
+      - martens-movies-pgdata:/var/lib/postgresql/data
+
+volumes:
+  martens-movies-pgdata:

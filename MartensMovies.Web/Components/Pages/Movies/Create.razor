@@ -1,0 +1,72 @@
+@page "/movies/create"
+@using MartensMovies.Web.Movies
+@using Wolverine
+@inject IMessageBus Bus
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<PageTitle>Create Movie</PageTitle>
+
+<h1>Create</h1>
+
+<EditForm Model="model" OnValidSubmit="Submit" FormName="create-movie">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        <InputText class="form-control" @bind-Value="model.Title" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Release Date</label>
+        <InputDate class="form-control" @bind-Value="model.ReleaseDate" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Genre</label>
+        <InputSelect class="form-select" @bind-Value="model.Genre">
+            @foreach (var g in Enum.GetValues<Genre>())
+            {
+                <option value="@g">@g</option>
+            }
+        </InputSelect>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Price</label>
+        <InputNumber class="form-control" @bind-Value="model.Price" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Rating (0–10)</label>
+        <InputNumber class="form-control" @bind-Value="model.Rating" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create</button>
+    <a class="btn btn-link" href="/movies">Back to list</a>
+</EditForm>
+
+@code {
+    private MovieForm model = new();
+
+    private async Task Submit()
+    {
+        var id = await Bus.InvokeAsync<Guid>(new CreateMovie(
+            model.Title!, model.ReleaseDate, model.Genre, model.Price, model.Rating));
+        Nav.NavigateTo($"/movies/{id}");
+    }
+
+    private class MovieForm
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(100, MinimumLength = 1)]
+        public string? Title { get; set; }
+
+        public DateOnly ReleaseDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+
+        public Genre Genre { get; set; } = Genre.Drama;
+
+        [System.ComponentModel.DataAnnotations.Range(0, 1000)]
+        public decimal Price { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(0, 10)]
+        public int Rating { get; set; }
+    }
+}

@@ -1,0 +1,103 @@
+@page "/movies"
+@using MartensMovies.Web.Movies
+@using Marten
+@inject IQuerySession Session
+@rendermode InteractiveServer
+
+<PageTitle>Movies</PageTitle>
+
+<h1>Movies</h1>
+
+<p>
+    <a class="btn btn-primary" href="/movies/create">Create New</a>
+</p>
+
+<div class="row g-2 mb-3">
+    <div class="col-auto">
+        <input class="form-control" placeholder="Title contains..."
+               @bind="searchTitle" @bind:event="oninput" />
+    </div>
+    <div class="col-auto">
+        <select class="form-select" @bind="searchGenre">
+            <option value="">(any genre)</option>
+            @foreach (var g in Enum.GetValues<Genre>())
+            {
+                <option value="@g">@g</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (movies is null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (movies.Count == 0)
+{
+    <p><em>No movies match.</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Release Date</th>
+                <th>Genre</th>
+                <th>Price</th>
+                <th>Rating</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in movies)
+            {
+                <tr>
+                    <td>@m.Title</td>
+                    <td>@m.ReleaseDate.ToString("yyyy-MM-dd")</td>
+                    <td>@m.Genre</td>
+                    <td>@m.Price.ToString("C")</td>
+                    <td>@m.Rating</td>
+                    <td>
+                        <a href="@($"/movies/edit/{m.Id}")">Edit</a>
+                        <span> | </span>
+                        <a href="@($"/movies/{m.Id}")">Details</a>
+                        <span> | </span>
+                        <a href="@($"/movies/delete/{m.Id}")">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<Movie>? movies;
+    private string _searchTitle = "";
+    private string _searchGenre = "";
+
+    private string searchTitle
+    {
+        get => _searchTitle;
+        set { _searchTitle = value; _ = Load(); }
+    }
+
+    private string searchGenre
+    {
+        get => _searchGenre;
+        set { _searchGenre = value; _ = Load(); }
+    }
+
+    protected override Task OnInitializedAsync() => Load();
+
+    private async Task Load()
+    {
+        var q = Session.Query<Movie>().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(_searchTitle))
+            q = q.Where(m => m.Title.Contains(_searchTitle));
+        if (Enum.TryParse<Genre>(_searchGenre, out var g))
+            q = q.Where(m => m.Genre == g);
+        movies = await q.ToListAsync();
+        StateHasChanged();
+    }
+}

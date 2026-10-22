@@ -1,0 +1,98 @@
+@page "/movies/edit/{Id:guid}"
+@using MartensMovies.Web.Movies
+@using Marten
+@using Wolverine
+@inject IQuerySession Session
+@inject IMessageBus Bus
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<PageTitle>Edit Movie</PageTitle>
+
+<h1>Edit</h1>
+
+@if (model is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="model" OnValidSubmit="Submit" FormName="edit-movie">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <InputText class="form-control" @bind-Value="model.Title" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Release Date</label>
+            <InputDate class="form-control" @bind-Value="model.ReleaseDate" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Genre</label>
+            <InputSelect class="form-select" @bind-Value="model.Genre">
+                @foreach (var g in Enum.GetValues<Genre>())
+                {
+                    <option value="@g">@g</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Price</label>
+            <InputNumber class="form-control" @bind-Value="model.Price" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Rating (0–10)</label>
+            <InputNumber class="form-control" @bind-Value="model.Rating" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn btn-link" href="/movies">Back to list</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private MovieForm? model;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var current = await Session.LoadAsync<Movie>(Id);
+        if (current is not null)
+        {
+            model = new MovieForm
+            {
+                Title = current.Title,
+                ReleaseDate = current.ReleaseDate,
+                Genre = current.Genre,
+                Price = current.Price,
+                Rating = current.Rating
+            };
+        }
+    }
+
+    private async Task Submit()
+    {
+        await Bus.InvokeAsync(new EditMovie(
+            Id, model!.Title!, model.ReleaseDate, model.Genre, model.Price, model.Rating));
+        Nav.NavigateTo($"/movies/{Id}");
+    }
+
+    private class MovieForm
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(100, MinimumLength = 1)]
+        public string? Title { get; set; }
+
+        public DateOnly ReleaseDate { get; set; }
+
+        public Genre Genre { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(0, 1000)]
+        public decimal Price { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(0, 10)]
+        public int Rating { get; set; }
+    }
+}

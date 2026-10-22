@@ -1,0 +1,37 @@
+@page "/movies/{Id:guid}"
+@using MartensMovies.Web.Movies
+@using Marten
+@inject IQuerySession Session
+@rendermode InteractiveServer
+
+<PageTitle>Movie Details</PageTitle>
+
+<h1>Details</h1>
+
+@if (movie is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <dl class="row">
+        <dt class="col-sm-2">Title</dt><dd class="col-sm-10">@movie.Title</dd>
+        <dt class="col-sm-2">Release Date</dt><dd class="col-sm-10">@movie.ReleaseDate.ToString("yyyy-MM-dd")</dd>
+        <dt class="col-sm-2">Genre</dt><dd class="col-sm-10">@movie.Genre</dd>
+        <dt class="col-sm-2">Price</dt><dd class="col-sm-10">@movie.Price.ToString("C")</dd>
+        <dt class="col-sm-2">Rating</dt><dd class="col-sm-10">@movie.Rating</dd>
+    </dl>
+    <a href="@($"/movies/edit/{Id}")">Edit</a>
+    <span> | </span>
+    <a href="/movies">Back to list</a>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private Movie? movie;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        movie = await Session.LoadAsync<Movie>(Id);
+    }
+}
